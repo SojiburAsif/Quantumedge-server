@@ -32,33 +32,41 @@ async function run() {
     //  collection
     const testCollection = client.db("testDB").collection("testCollection");
 
-    // --- GET all items ---
-    app.get("/items", async (req, res) => {
+
+    app.post("/services", async (req, res) => {
       try {
-        const items = await testCollection.find().toArray();
-        res.json(items);
+        const service = req.body;
+
+        if (
+          !service.name ||
+          !service.category ||
+          !service.type ||
+          !service.description ||
+          !service.duration ||
+          !service.budget ||
+          !service.level
+        ) {
+          return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        const result = await testCollection.insertOne(service);
+        res.status(201).json({ insertedId: result.insertedId });
       } catch (err) {
-        console.error("Error fetching items:", err);
-        res.status(500).json({ error: "Failed to fetch items" });
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
       }
     });
 
-    // --- POST a new item ---
-    app.post("/items", async (req, res) => {
-      const newItem = req.body;
-      if (!newItem.name) {
-        return res.status(400).json({ error: "Name is required" });
-      }
-
+    // GET /services - Get all projects/services
+    app.get("/services", async (req, res) => {
       try {
-        const result = await testCollection.insertOne(newItem);
-        res.status(201).json({ _id: result.insertedId, ...newItem });
+        const services = await testCollection.find({}).toArray();
+        res.status(200).json(services);
       } catch (err) {
-        console.error("Error inserting item:", err);
-        res.status(500).json({ error: "Failed to insert item" });
+        console.error(err);
+        res.status(500).json({ message: "Server Error" });
       }
     });
-
   } catch (err) {
     console.error("MongoDB connection error:", err);
   }
